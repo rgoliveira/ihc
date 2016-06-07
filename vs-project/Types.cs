@@ -2,6 +2,12 @@
 {
     namespace Types
     {
+        public enum Velocities : int
+        {
+            Mouse_Movement = 15,
+            Wheel_Rotation = 10
+        }
+
         // xinput own thresholds/deadzones
         public enum Thresholds : int
         {

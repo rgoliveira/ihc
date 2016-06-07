@@ -50,6 +50,8 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Types.cs" />
+    <Compile Include="VirtualMedia.cs" />
+    <Compile Include="VirtualMouse.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

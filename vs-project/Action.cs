@@ -15,24 +15,68 @@ namespace ihc
         private delegate void Act(Types.XINPUT_GAMEPAD_STATE state);
         private Act _act;
 
-        private System.Drawing.Point get_new_mouse_pos(Types.XINPUT_GAMEPAD_STATE state)
+        private double get_axis_delta(short axis_value, short deadzone)
         {
-            int deltaX = 0, deltaY = 0;
-            if (state.sThumbLX > (int)Types.Thresholds.XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
+            double delta;
+            if (Math.Abs(axis_value) > deadzone)
             {
-                deltaX = 5;
-            } else if (state.sThumbLX < (-1) * (int)Types.Thresholds.XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
-            {
-                deltaX = -5;
+                delta = axis_value / 32767.0;
+                if (delta < 0)
+                {
+                    delta *= -delta;
+                } else
+                {
+                    delta *= delta;
+                }
             }
-            if (state.sThumbLY > (int)Types.Thresholds.XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
+            else
             {
-                deltaY = -5;
-            } else if (state.sThumbLY < (-1) * (int)Types.Thresholds.XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
-            {
-                deltaY = 5;
+                delta = 0.0;
             }
-            return new System.Drawing.Point(Cursor.Position.X + deltaX, Cursor.Position.Y + deltaY);
+            return delta;
+        }
+
+        private int get_mouse_deltaX(Types.XINPUT_GAMEPAD_STATE state)
+        {            
+            double delta = get_axis_delta(state.sThumbLX, (short)Types.Thresholds.XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+            return (int)(delta * (int)Types.Velocities.Mouse_Movement);
+        }
+
+        private int get_mouse_deltaY(Types.XINPUT_GAMEPAD_STATE state)
+        {
+            double delta = get_axis_delta(state.sThumbLY, (short)Types.Thresholds.XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+            return (int)(-delta * (int)Types.Velocities.Mouse_Movement);         
+        }
+
+        private int get_wheel_deltaX(Types.XINPUT_GAMEPAD_STATE state)
+        {
+            double delta = get_axis_delta(state.sThumbRX, (short)Types.Thresholds.XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
+            return (int)(delta * (int)Types.Velocities.Wheel_Rotation);
+        }
+
+        private int get_wheel_deltaY(Types.XINPUT_GAMEPAD_STATE state)
+        {
+            double delta = get_axis_delta(state.sThumbRY, (short)Types.Thresholds.XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
+            return (int)(delta * (int)Types.Velocities.Wheel_Rotation);
+        }
+
+        private int get_volume_delta(Types.XINPUT_GAMEPAD_STATE state)
+        {
+            if (state.bLeftTrigger > (byte)Types.Thresholds.XINPUT_GAMEPAD_TRIGGER_THRESHOLD)
+            {
+                return -1;
+            } else if (state.bRightTrigger > (byte)Types.Thresholds.XINPUT_GAMEPAD_TRIGGER_THRESHOLD) {
+                return +1;
+            } else {
+                return 0;
+            }
+        }
+
+        private void invoke_osk()
+        {
+            // activates on-screen-keyboard
+            // todo: doesn't work! osk says it cannot execute. need privileges?
+            //System.Diagnostics.Process.Start(@"osk.exe");
         }
 
         public Action(string action_string)
@@ -42,17 +86,56 @@ namespace ihc
             // parse action string
 
             // simple keys
-            Match m = Regex.Match(action_string, @"^([+%^])?([a-z]|BKSP|CAPSLOCK|DEL|DOWN|END|ENTER|ESC|HOME|INS|LEFT|NUMLOCK|PGDN|PGUP|PRTSC|RIGHT|TAB|UP|F\d+)$", RegexOptions.IgnoreCase);
+            // modifiers: shift = +, ctrl = ^, alt = %
+            Match m = Regex.Match(action_string, @"^([+%^]*)(.|\{(BKSP|CAPSLOCK|DEL|DOWN|END|ENTER|ESC|HOME|INS|LEFT|NUMLOCK|PGDN|PGUP|PRTSC|RIGHT|TAB|UP|F\d+)\})$", RegexOptions.IgnoreCase);
             if (m.Success)
             {
-                _act = (x) => SendKeys.SendWait("{" + action_string + "}");
+                _act = (x) => SendKeys.SendWait(action_string);              
+            }
+
+            // virtual keyboard
+            m = Regex.Match(action_string, @"^osk$", RegexOptions.IgnoreCase);
+            if (m.Success)
+            {
+                _act = (x) => invoke_osk();
+            }
+
+            // wheel rotation (vertical and horizontal scrolling)
+            m = Regex.Match(action_string, @"^wheel$", RegexOptions.IgnoreCase);
+            if (m.Success)
+            {
+                _act = (x) => VirtualMouse.Wheel(get_wheel_deltaX(x), get_wheel_deltaY(x));
+            }
+
+            // mouse movement
+            m = Regex.Match(action_string, @"^mouse$", RegexOptions.IgnoreCase);
+            if (m.Success)
+            {
+                _act = (x) => VirtualMouse.Move(get_mouse_deltaX(x), get_mouse_deltaY(x));
             }
 
             // mouse buttons
-            m = Regex.Match(action_string, @"^mouse$");
+            m = Regex.Match(action_string, @"^mouse left$", RegexOptions.IgnoreCase);
             if (m.Success)
             {
-                _act = (x) => Cursor.Position = get_new_mouse_pos(x);
+                _act = (x) => VirtualMouse.LeftClick();
+            }
+            m = Regex.Match(action_string, @"^mouse right$", RegexOptions.IgnoreCase);
+            if (m.Success)
+            {
+                _act = (x) => VirtualMouse.RightClick();
+            }
+            m = Regex.Match(action_string, @"^mouse middle", RegexOptions.IgnoreCase);
+            if (m.Success)
+            {
+                _act = (x) => VirtualMouse.MiddleClick();
+            }
+
+            // volume            
+            m = Regex.Match(action_string, @"^volume$", RegexOptions.IgnoreCase);
+            if (m.Success)
+            {
+                _act = (x) => VirtualMedia.change_volume(get_volume_delta(x));
             }
 
         }
