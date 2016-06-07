@@ -5,25 +5,22 @@ namespace ihc
     class Program
     {
         private static System.Timers.Timer t;
+        private static Action a;
         static void Main(string[] args)
         {
-            t = new System.Timers.Timer(25);
+            a = new Action("mouse");
+
+            t = new System.Timers.Timer(10);
             t.AutoReset = true;
             t.Elapsed += OnTimedEvent;
             t.Enabled = true;
+            Console.WriteLine("Press ENTER anytime to quit...");
             Console.ReadLine(); // press anything to quit
         }
 
         private static void OnTimedEvent(Object source, System.Timers.ElapsedEventArgs e)
         {
-            if (Controller.is_button_down(Types.UserIndex.Any, Types.ButtonFlags.A))
-            {
-                Console.WriteLine("A!");
-            }
-            if (Controller.is_button_down(Types.UserIndex.Any, Types.ButtonFlags.GUIDE))
-            {
-                Console.WriteLine("GUIDE!");
-            }
+            a.execute(Controller.get_gamepad_state((int)Types.UserIndex.One));
         }
     }
 }

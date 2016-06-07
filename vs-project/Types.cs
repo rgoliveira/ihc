@@ -2,6 +2,14 @@
 {
     namespace Types
     {
+        // xinput own thresholds/deadzones
+        public enum Thresholds : int
+        {
+            XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE = 7849,
+            XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE = 8689,
+            XINPUT_GAMEPAD_TRIGGER_THRESHOLD = 30
+        }
+
         public struct XINPUT_GAMEPAD_STATE
         {
             public uint eventCount;
@@ -33,13 +41,13 @@
             Y = 0x8000
         };
 
-        public enum UserIndex : uint
+        public enum UserIndex : int
         {
             One = 0x00,
             Two = 0x01,
             Three = 0x02,
             Four = 0x03,
-            Any = 0xFF
+            Any = 0x000000FF
         };
     }
 }
