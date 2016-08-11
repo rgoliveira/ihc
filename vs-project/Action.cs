@@ -1,16 +1,14 @@
 ﻿using System;
 using System.Windows.Forms;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using ihc;
+using System.Diagnostics;
 
 namespace ihc
 {
     class Action
     {
-        private string _action_string;
+        public string _action_string { get; private set; }
+        public string label { get; private set; }
 
         private delegate void Act(Types.XINPUT_GAMEPAD_STATE state);
         private Act _act;
@@ -74,14 +72,27 @@ namespace ihc
 
         private void invoke_osk()
         {
-            // activates on-screen-keyboard
-            // todo: doesn't work! osk says it cannot execute. need privileges?
+            // activates on-screen-keyboard.
+
+            // A T T E N T I O N ! ! !
+            // for this to work, and to be able to interact with "especial" software,
+            // run this cmd: "icacls <binary> /setintegritylevel High"
+
+            // "classic" screen keyboard
             //System.Diagnostics.Process.Start(@"osk.exe");
+
+            // new tablet screen keyboard (not a full keyboard; lacks ALT, WinKey, ...)
+            // much better to write on than the other.
+            //ProcessStartInfo startInfo = new ProcessStartInfo(@"C:\Program Files\Common Files\microsoft shared\ink\TabTip.exe");
+            ProcessStartInfo startInfo = new ProcessStartInfo(@"TabTip.exe");
+            //startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            Process.Start(startInfo);
         }
 
-        public Action(string action_string)
+        public Action(string action_string, string label)
         {
             this._action_string = action_string;
+            this.label = label;
 
             // parse action string
 
